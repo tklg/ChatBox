@@ -4,9 +4,6 @@ import common.*;
 
 public class TextTransferProtocol {
 	
-	private static final String SPLITTER = "‡";
-	private static final String CS = "§"; //§§§§§§§§§§§
-	
 	private ChatServerThread thread;
 	
 	public TextTransferProtocol(ChatServerThread thread) {
@@ -25,7 +22,7 @@ public class TextTransferProtocol {
     		p.nl(thread.name + ": " + in);
     	} else if (thread.isMuted()) {
     		ChatServer.pushToChat(thread.name + ": " + in);
-    		ChatServer.sendOne(thread.getID(), CS+"cNo one can hear you.");
+    		ChatServer.sendOne(thread.getID(), Colors.RED+"No one can hear you.");
     	} else {
     		out = in.trim();
     	}

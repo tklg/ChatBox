@@ -5,32 +5,22 @@ import java.awt.Dimension;
 import javax.swing.*;
 import javax.swing.GroupLayout.Alignment;
 import javax.swing.LayoutStyle.ComponentPlacement;
-import javax.swing.border.LineBorder;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultCaret;
-import javax.swing.text.Document;
-import javax.swing.text.html.HTML;
 import javax.swing.text.html.HTMLDocument;
 import javax.swing.text.html.HTMLEditorKit;
 
-import common.p;
+import common.Colors;
 
 import java.awt.Color;
 import java.awt.Font;
-import java.awt.GridLayout;
-import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.io.StringReader;
-import java.util.ArrayList;
 
 public class ChatServerGUI {
 	
-	private static final String CS = "§";
-	
-	private static final int WIDTH_MAIN = 700,
-			  		  HEIGHT_MAIN = 500;
 	private static final String ver = ChatServer.ver;
 	
 	private static JFrame frame;
@@ -150,7 +140,7 @@ public class ChatServerGUI {
 		return (portSet.getText().length() > 0) ? Integer.parseInt(portSet.getText()) : 0;
 	}
 	public void pushToChat(String msg) {
-		append(msg + "\n");
+		append(ChatServerFunctions.parseColor(msg) + "\n");
 	}
 	public void append(String s) {
 		   try {
@@ -192,7 +182,7 @@ public class ChatServerGUI {
 		public void actionPerformed(ActionEvent e) {
 			if (!input.getText().equals("")) {
 				String msg = ChatServerFunctions.parseIn(input.getText());
-				if (msg != null) ChatServer.sendAll(CS + "d[Server]" + CS + "f: " + msg); //when send button pressed, send message in text box
+				if (msg != null) ChatServer.sendAll(Colors.PINK + "[Server]" + Colors.WHITE + ": " + msg); //when send button pressed, send message in text box
 				input.setText(null); //clear box
 			}
 		}
