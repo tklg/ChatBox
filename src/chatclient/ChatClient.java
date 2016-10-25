@@ -8,7 +8,7 @@ import common.*;
 public class ChatClient implements Runnable {
 	
 	public static final String REQ = "‡";
-	public static final String ver = "1.5";
+	public static final String ver = "1.6";
 	private static PrintWriter msgOut;
 	private static BufferedReader msgIn;
 	private static ChatClientGUI g;
@@ -24,6 +24,16 @@ public class ChatClient implements Runnable {
 		if (!serverFile.exists()) {
 			try {
 				serverFile.createNewFile();
+				PrintWriter writer;
+				try {
+					writer = new PrintWriter(serverFile, "UTF-8");
+					writer.println("[{\"port\":\"25565\",\"ip\":\"localhost:25565\",\"name\":\"localhost\",\"host\":\"localhost\"}]");
+					writer.close();
+				} catch (FileNotFoundException e) {
+					e.printStackTrace();
+				} catch (UnsupportedEncodingException e) {
+					e.printStackTrace();
+				}
 			} catch (IOException e) {
 				e.printStackTrace();
 			}

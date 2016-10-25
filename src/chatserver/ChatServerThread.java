@@ -229,7 +229,7 @@ public class ChatServerThread extends Thread {
 				break;
 			}
 			String cmds = "";
-			if (getRank() > 0) cmds += "/me /logout /msg /r /who /help /ping ";
+			if (getRank() > 0) cmds += "/me /logout /msg /r /who /help /ping /motd";
 			if (getRank() > 1) cmds += "/kick /broadcast /mute ";
 			if (getRank() > 2) cmds += "/stop /kickall /pex ";
 			ChatServer.sendOne(ChatServer.getClientID(name), Colors.LIGHTGREEN + "Available commands: " + cmds);
@@ -337,6 +337,44 @@ public class ChatServerThread extends Thread {
 				msg += cmd[i] + " ";
 			}
 			ChatServer.sendAll(Colors.DARKRED + "[" + Colors.LIGHTGREEN + "Broadcast" + Colors.DARKRED + "]" + Colors.LIGHTGREEN + Colors.BOLD + " " + msg);
+			break;
+		case "motd":
+			if (cmd.length == 1)
+				ChatServer.sendOne(ChatServer.getClientID(name), ChatServer.getLoginMessage());
+			else if (cmd.length > 1) {
+				if (getRank() < 2) {
+					ChatServer.sendOne(ChatServer.getClientID(name), Colors.RED + "You do not have permission to change this");
+					break;
+				}
+				String motd = "";
+				for (int i = 1; i < cmd.length; i++) {
+					if (i != 1) motd += " ";
+					motd += cmd[i];
+				}
+				ChatServer.setMotd(motd);
+				ChatServer.sendOne(ChatServer.getClientID(name), Colors.LIGHTGREEN + "motd changed to: " + Colors.REGULAR + motd);
+				ChatServer.writeConfig();
+			} else
+				ChatServer.sendOne(ChatServer.getClientID(name), Colors.DARKRED + "motd syntax: /motd or /motd &lt;new motd&gt;");
+			break;
+		case "loginmessage":
+			if (cmd.length == 1)
+				ChatServer.sendOne(ChatServer.getClientID(name), ChatServer.getLoginMessage());
+			else if (cmd.length > 1) {
+				if (getRank() < 2) {
+					ChatServer.sendOne(ChatServer.getClientID(name), Colors.RED + "You do not have permission to change this");
+					break;
+				}
+				String motd = "";
+				for (int i = 1; i < cmd.length; i++) {
+					if (i != 1) motd += " ";
+					motd += cmd[i];
+				}
+				ChatServer.setLoginMessage(motd);
+				ChatServer.sendOne(ChatServer.getClientID(name), Colors.LIGHTGREEN + "loginmessage changed to: " + Colors.REGULAR + motd);
+				ChatServer.writeConfig();
+			} else
+				ChatServer.sendOne(ChatServer.getClientID(name), Colors.DARKRED + "loginmessage syntax: /loginmessage or /loginmessage &lt;new motd&gt;");
 			break;
 		case "pex": //admin
 		case "rank":

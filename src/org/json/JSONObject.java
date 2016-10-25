@@ -30,7 +30,8 @@ import java.io.Writer;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.math.*;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -92,7 +93,7 @@ import java.util.Set;
  * </ul>
  *
  * @author JSON.org
- * @version 2015-12-09
+ * @version 2016-08-15
  */
 public class JSONObject {
     /**
@@ -131,6 +132,7 @@ public class JSONObject {
          *
          * @return The string "null".
          */
+        @Override
         public String toString() {
             return "null";
         }
@@ -836,7 +838,7 @@ public class JSONObject {
         }
         testValidity(number);
 
-// Shave off trailing zeros and decimal point, if possible.
+        // Shave off trailing zeros and decimal point, if possible.
 
         String string = number.toString();
         if (string.indexOf('.') > 0 && string.indexOf('e') < 0
@@ -900,7 +902,9 @@ public class JSONObject {
                 return myE;
             }
             return Enum.valueOf(clazz, val.toString());
-        } catch (IllegalArgumentException | NullPointerException e) {
+        } catch (IllegalArgumentException e) {
+            return defaultValue;
+        } catch (NullPointerException e) {
             return defaultValue;
         }
     }
@@ -1336,6 +1340,46 @@ public class JSONObject {
     }
 
     /**
+     * Creates a JSONPointer using an intialization string and tries to 
+     * match it to an item within this JSONObject. For example, given a
+     * JSONObject initialized with this document:
+     * <pre>
+     * {
+     *     "a":{"b":"c"}
+     * }
+     * </pre>
+     * and this JSONPointer string: 
+     * <pre>
+     * "/a/b"
+     * </pre>
+     * Then this method will return the String "c".
+     * A JSONPointerException may be thrown from code called by this method.
+     *   
+     * @param jsonPointer string that can be used to create a JSONPointer
+     * @return the item matched by the JSONPointer, otherwise null
+     */
+    public Object query(String jsonPointer) {
+        return new JSONPointer(jsonPointer).queryFrom(this);
+    }
+    
+    /**
+     * Queries and returns a value from this object using {@code jsonPointer}, or
+     * returns null if the query fails due to a missing key.
+     * 
+     * @param jsonPointer the string representation of the JSON pointer
+     * @return the queried value or {@code null}
+     * @throws IllegalArgumentException if {@code jsonPointer} has invalid syntax
+     */
+    public Object optQuery(String jsonPointer) {
+        JSONPointer pointer = new JSONPointer(jsonPointer);
+        try {
+            return pointer.queryFrom(this);
+        } catch (JSONPointerException e) {
+            return null;
+        }
+    }
+
+    /**
      * Produce a string in double quotes with backslash sequences in all the
      * right places. A backslash will be inserted within </, producing <\/,
      * allowing JSON text to be delivered in HTML. In JSON text, a string cannot
@@ -1477,7 +1521,6 @@ public class JSONObject {
      * @return A simple JSON value.
      */
     public static Object stringToValue(String string) {
-        Double d;
         if (string.equals("")) {
             return string;
         }
@@ -1496,23 +1539,23 @@ public class JSONObject {
          * produced, then the value will just be a string.
          */
 
-        char b = string.charAt(0);
-        if ((b >= '0' && b <= '9') || b == '-') {
+        char initial = string.charAt(0);
+        if ((initial >= '0' && initial <= '9') || initial == '-') {
             try {
                 if (string.indexOf('.') > -1 || string.indexOf('e') > -1
-                        || string.indexOf('E') > -1) {
-                    d = Double.valueOf(string);
+                        || string.indexOf('E') > -1
+                        || "-0".equals(string)) {
+                    Double d = Double.valueOf(string);
                     if (!d.isInfinite() && !d.isNaN()) {
                         return d;
                     }
                 } else {
                     Long myLong = new Long(string);
                     if (string.equals(myLong.toString())) {
-                        if (myLong == myLong.intValue()) {
-                            return myLong.intValue();
-                        } else {
-                            return myLong;
+                        if (myLong.longValue() == myLong.intValue()) {
+                            return Integer.valueOf(myLong.intValue());
                         }
+                        return myLong;
                     }
                 }
             } catch (Exception ignore) {
@@ -1579,6 +1622,7 @@ public class JSONObject {
      *         brace)</small> and ending with <code>}</code>&nbsp;<small>(right
      *         brace)</small>.
      */
+    @Override
     public String toString() {
         try {
             return this.toString(0);
@@ -1649,7 +1693,18 @@ public class JSONObject {
             throw new JSONException("Bad value from toJSONString: " + object);
         }
         if (value instanceof Number) {
-            return numberToString((Number) value);
+            // not all Numbers may match actual JSON Numbers. i.e. Fractions or Complex
+            final String numberAsString = numberToString((Number) value);
+            try {
+                // Use the BigDecimal constructor for it's parser to validate the format.
+                new BigDecimal(numberAsString);
+                // Close enough to a JSON number that we will return it unquoted
+                return numberAsString;
+            } catch (NumberFormatException ex){
+                // The Number value is not a valid JSON number.
+                // Instead we will quote it as a string
+                return quote(numberAsString);
+            }
         }
         if (value instanceof Boolean || value instanceof JSONObject
                 || value instanceof JSONArray) {
@@ -1665,6 +1720,9 @@ public class JSONObject {
         }
         if (value.getClass().isArray()) {
             return new JSONArray(value).toString();
+        }
+        if(value instanceof Enum<?>){
+            return quote(((Enum<?>)value).name());
         }
         return quote(value.toString());
     }
@@ -1693,7 +1751,7 @@ public class JSONObject {
                     || object instanceof Long || object instanceof Boolean
                     || object instanceof Float || object instanceof Double
                     || object instanceof String || object instanceof BigInteger
-                    || object instanceof BigDecimal) {
+                    || object instanceof BigDecimal || object instanceof Enum) {
                 return object;
             }
 
@@ -1739,6 +1797,32 @@ public class JSONObject {
             int indentFactor, int indent) throws JSONException, IOException {
         if (value == null || value.equals(null)) {
             writer.write("null");
+        } else if (value instanceof JSONString) {
+            Object o;
+            try {
+                o = ((JSONString) value).toJSONString();
+            } catch (Exception e) {
+                throw new JSONException(e);
+            }
+            writer.write(o != null ? o.toString() : quote(value.toString()));
+        } else if (value instanceof Number) {
+            // not all Numbers may match actual JSON Numbers. i.e. fractions or Imaginary
+            final String numberAsString = numberToString((Number) value);
+            try {
+                // Use the BigDecimal constructor for it's parser to validate the format.
+                @SuppressWarnings("unused")
+                BigDecimal testNum = new BigDecimal(numberAsString);
+                // Close enough to a JSON number that we will use it unquoted
+                writer.write(numberAsString);
+            } catch (NumberFormatException ex){
+                // The Number value is not a valid JSON number.
+                // Instead we will quote it as a string
+                quote(numberAsString, writer);
+            }
+        } else if (value instanceof Boolean) {
+            writer.write(value.toString());
+        } else if (value instanceof Enum<?>) {
+            writer.write(quote(((Enum<?>)value).name()));
         } else if (value instanceof JSONObject) {
             ((JSONObject) value).write(writer, indentFactor, indent);
         } else if (value instanceof JSONArray) {
@@ -1751,18 +1835,6 @@ public class JSONObject {
             new JSONArray(coll).write(writer, indentFactor, indent);
         } else if (value.getClass().isArray()) {
             new JSONArray(value).write(writer, indentFactor, indent);
-        } else if (value instanceof Number) {
-            writer.write(numberToString((Number) value));
-        } else if (value instanceof Boolean) {
-            writer.write(value.toString());
-        } else if (value instanceof JSONString) {
-            Object o;
-            try {
-                o = ((JSONString) value).toJSONString();
-            } catch (Exception e) {
-                throw new JSONException(e);
-            }
-            writer.write(o != null ? o.toString() : quote(value.toString()));
         } else {
             quote(value.toString(), writer);
         }
@@ -1781,10 +1853,16 @@ public class JSONObject {
      * <p>
      * Warning: This method assumes that the data structure is acyclical.
      *
+     * @param writer
+     *            Writes the serialized JSON
+     * @param indentFactor
+     *            The number of spaces to add to each level of indentation.
+     * @param indent
+     *            The indention of the top level.
      * @return The writer.
      * @throws JSONException
      */
-    Writer write(Writer writer, int indentFactor, int indent)
+    public Writer write(Writer writer, int indentFactor, int indent)
             throws JSONException {
         try {
             boolean commanate = false;
@@ -1829,5 +1907,32 @@ public class JSONObject {
         } catch (IOException exception) {
             throw new JSONException(exception);
         }
+    }
+
+    /**
+     * Returns a java.util.Map containing all of the entries in this object.
+     * If an entry in the object is a JSONArray or JSONObject it will also
+     * be converted.
+     * <p>
+     * Warning: This method assumes that the data structure is acyclical.
+     *
+     * @return a java.util.Map containing the entries of this object
+     */
+    public Map<String, Object> toMap() {
+        Map<String, Object> results = new HashMap<String, Object>();
+        for (Entry<String, Object> entry : this.map.entrySet()) {
+            Object value;
+            if (entry.getValue() == null || NULL.equals(entry.getValue())) {
+                value = null;
+            } else if (entry.getValue() instanceof JSONObject) {
+                value = ((JSONObject) entry.getValue()).toMap();
+            } else if (entry.getValue() instanceof JSONArray) {
+                value = ((JSONArray) entry.getValue()).toList();
+            } else {
+                value = entry.getValue();
+            }
+            results.put(entry.getKey(), value);
+        }
+        return results;
     }
 }

@@ -1,5 +1,1 @@
-[{
-	"MOTD": "This is the best MOTD",
-	"welcomemessage": "&aWelcome to &6ChatServer &aTest Server!",
-	"port": 25565
-}]
+[{"port":25565,"MOTD":"test","welcomemessage":"&6-----------------------------------------------------------------------<br>&a&nbsp;&nbsp;&nbsp;Welcome to the server!<br>&6-----------------------------------------------------------------------"}]

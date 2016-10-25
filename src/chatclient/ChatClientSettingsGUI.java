@@ -71,7 +71,6 @@ public class ChatClientSettingsGUI {
 		
 		userNameSet = new JTextField();
 		//userNameSet.setBounds(77, 356, 148, 20);
-		userNameSet.setToolTipText("Server Name");
 		userNameSet.setColumns(10);
 		userNameSet.requestFocus();
 		inputIp = new JTextField();
@@ -98,6 +97,7 @@ public class ChatClientSettingsGUI {
 		
 		inputName = new JTextField();
 		//inputName.setBounds(428, 338, 148, 20);
+		inputName.setToolTipText("Server Name");
 		panel.add(inputName);
 		inputName.setColumns(10);
 		

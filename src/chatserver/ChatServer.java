@@ -22,7 +22,7 @@ public class ChatServer implements Runnable {
 	private static String LOGINMESSAGE = "";
 	public static final String REQ = "‡";
 	private static ChatServerGUI g;
-	public static final String ver = "1.5";
+	public static final String ver = "1.6";
 	public static final int HEIGHT = 402,
 			WIDTH = 700;
 	
@@ -37,7 +37,7 @@ public class ChatServer implements Runnable {
 				try {
 					writer = new PrintWriter(cfg, "UTF-8");
 					writer.println("[{");
-					writer.println("\"MOTD\": \"\"");
+					writer.println("\"MOTD\": \"\",");
 					writer.println("\"welcomemessage\": \"\",");
 					writer.println("\"port\": 25565");
 					writer.println("}]");
@@ -54,6 +54,16 @@ public class ChatServer implements Runnable {
 		if (!staffFile.exists()) {
 			try {
 				staffFile.createNewFile();
+				PrintWriter writer;
+				try {
+					writer = new PrintWriter(staffFile, "UTF-8");
+					writer.println("[]");
+					writer.close();
+				} catch (FileNotFoundException e) {
+					e.printStackTrace();
+				} catch (UnsupportedEncodingException e) {
+					e.printStackTrace();
+				}
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -154,8 +164,11 @@ public class ChatServer implements Runnable {
 	public static String getLoginMessage() {
 		return LOGINMESSAGE;
 	}
-	private static void setMotd(String m) {
+	public static void setMotd(String m) {
 		MOTD = m;
+	}
+	public static void setLoginMessage(String m) {
+		LOGINMESSAGE = m;
 	}
 	private static void getStaffFromJson() {
 		mods.clear();
@@ -193,6 +206,25 @@ public class ChatServer implements Runnable {
 		PrintWriter writer;
 		try {
 			writer = new PrintWriter("cfg/staff.json", "UTF-8");
+			writer.print(res);
+			writer.close();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+		}
+	}
+	public static void writeConfig() {
+		JSONArray arr = new JSONArray();
+		JSONObject o = new JSONObject();
+		o.put("MOTD", MOTD);
+		o.put("welcomemessage", LOGINMESSAGE);
+		o.put("port", port);
+		arr.put(o);
+		String res = arr.toString();
+		PrintWriter writer;
+		try {
+			writer = new PrintWriter("cfg/servercfg.json", "UTF-8");
 			writer.print(res);
 			writer.close();
 		} catch (FileNotFoundException e) {

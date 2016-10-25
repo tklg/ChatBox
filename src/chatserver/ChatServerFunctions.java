@@ -116,7 +116,7 @@ public class ChatServerFunctions {
 				ChatServer.pushToChat(Colors.DARKRED + "help syntax: /help");
 				break;
 			}
-			ChatServer.pushToChat(Colors.LIGHTGREEN + "Available commands: /me /broadcast /bc /emote /msg /message /mute /r /reply /who /list /stop /kick /kickall /pex /help /?");
+			ChatServer.pushToChat(Colors.LIGHTGREEN + "Available commands: /me /broadcast /bc /emote /msg /message /motd /mute /r /reply /who /list /stop /kick /kickall /pex /help /?");
 			break;
 		case "who":
 		case "list":
@@ -185,6 +185,36 @@ public class ChatServerFunctions {
 				msg += cmd[i] + " ";
 			}
 			ChatServer.sendAll(Colors.DARKRED + "[" + Colors.LIGHTGREEN + "Broadcast" + Colors.DARKRED + "]" + Colors.LIGHTGREEN + Colors.BOLD + " " + msg);
+			break;
+		case "motd":
+			if (cmd.length == 1)
+				ChatServer.pushToChat(ChatServer.getLoginMessage());
+			else if (cmd.length > 1) {
+				String motd = "";
+				for (int i = 1; i < cmd.length; i++) {
+					if (i != 1) motd += " ";
+					motd += cmd[i];
+				}
+				ChatServer.setMotd(motd);
+				ChatServer.pushToChat(Colors.LIGHTGREEN + "motd changed to: " + Colors.REGULAR + motd);
+				ChatServer.writeConfig();
+			} else
+				ChatServer.pushToChat(Colors.DARKRED + "motd syntax: /motd or /motd &lt;new motd&gt;");
+			break;
+		case "loginmessage":
+			if (cmd.length == 1)
+				ChatServer.pushToChat(ChatServer.getLoginMessage());
+			else if (cmd.length > 1) {
+				String motd = "";
+				for (int i = 1; i < cmd.length; i++) {
+					if (i != 1) motd += " ";
+					motd += cmd[i];
+				}
+				ChatServer.setLoginMessage(motd);
+				ChatServer.pushToChat(Colors.LIGHTGREEN + "loginmessage changed to: " + Colors.REGULAR + motd);
+				ChatServer.writeConfig();
+			} else
+				ChatServer.pushToChat(Colors.DARKRED + "loginmessage syntax: /loginmessage or /loginmessage &lt;new motd&gt;");
 			break;
 		case "pex":
 		case "rank":

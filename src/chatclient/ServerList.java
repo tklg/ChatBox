@@ -59,6 +59,7 @@ public class ServerList {
 			arr.put(obj);
 		}
 		String res = arr.toString();
+		p.nl(res);
 		PrintWriter writer;
 		try {
 			writer = new PrintWriter(filepath, "UTF-8");
